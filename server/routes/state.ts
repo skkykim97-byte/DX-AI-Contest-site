@@ -1,9 +1,11 @@
 import { Router } from 'express';
 import { StateService, StateTransitionError } from '../services/StateService.js';
+import { VoteService } from '../services/VoteService.js';
 import { adminAuth } from '../middleware/adminAuth.js';
 
 const router = Router();
 const stateService = new StateService();
+const voteService = new VoteService();
 
 // GET /api/state - 현재 투표 상태 조회 (public)
 router.get('/', async (_req, res) => {
@@ -29,6 +31,17 @@ router.put('/advance', adminAuth, async (_req, res) => {
       return;
     }
     res.status(500).json({ error: '상태 변경 중 오류가 발생했습니다.' });
+  }
+});
+
+// PUT /api/state/reset - 투표 초기화: 모든 투표 삭제 + 상태를 '미시작'으로 (Admin only)
+router.put('/reset', adminAuth, async (_req, res) => {
+  try {
+    await voteService.clearAllVotes();
+    const state = await stateService.reset();
+    res.json(state);
+  } catch (err) {
+    res.status(500).json({ error: '투표 초기화 중 오류가 발생했습니다.' });
   }
 });
 

@@ -67,6 +67,16 @@ export class StateService {
     await this.store.writeAll([newState]);
     return newState;
   }
+
+  /**
+   * Reset the voting state back to the initial 'not_started' state.
+   * Used by the admin reset feature for repeated testing.
+   */
+  async reset(): Promise<VotingState> {
+    const state: VotingState = { ...DEFAULT_STATE };
+    await this.store.writeAll([state]);
+    return state;
+  }
 }
 
 export class StateTransitionError extends Error {

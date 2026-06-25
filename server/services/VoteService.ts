@@ -126,6 +126,13 @@ export class VoteService {
   async getAllVotes(): Promise<Vote[]> {
     return this.store.readAll();
   }
+
+  /**
+   * Delete all votes. Used by the admin reset feature for repeated testing.
+   */
+  async clearAllVotes(): Promise<void> {
+    await this.store.writeAll([]);
+  }
 }
 
 export class VoteValidationError extends Error {

@@ -10,6 +10,7 @@ import {
   fetchSubmissions,
   fetchState,
   advanceState,
+  resetVoting,
   fetchVoters,
 } from '../services/api';
 import StatusBadge from '../components/StatusBadge';
@@ -75,6 +76,7 @@ function AdminPage() {
   // --- State transition feedback ---
   const [stateError, setStateError] = useState<string | null>(null);
   const [advancing, setAdvancing] = useState(false);
+  const [resetting, setResetting] = useState(false);
 
   // Handle a 401 anywhere: drop the token and show auth failure.
   const handleAuthFailure = useCallback(() => {
@@ -291,6 +293,35 @@ function AdminPage() {
     }
   }
 
+  async function handleResetVoting() {
+    if (!token) return;
+    const confirmed = window.confirm(
+      '모든 투표 기록을 삭제하고 투표 상태를 "미시작"으로 되돌립니다.\n(제출물은 유지됩니다.) 계속하시겠습니까?'
+    );
+    if (!confirmed) return;
+
+    setStateError(null);
+    setResetting(true);
+    try {
+      const next = await resetVoting(token);
+      setVotingState(next);
+      // Refresh voters list (now empty) and other data.
+      await loadData(token);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        handleAuthFailure();
+        return;
+      }
+      if (err instanceof ApiError) {
+        setStateError(err.message);
+      } else {
+        setStateError('투표 초기화 중 오류가 발생했습니다.');
+      }
+    } finally {
+      setResetting(false);
+    }
+  }
+
   // -------------------------------------------------------------------------
   // Render: password prompt (unauthenticated)
   // -------------------------------------------------------------------------
@@ -371,6 +402,21 @@ function AdminPage() {
           상태는 단방향으로만 전환됩니다: 미시작 → 진행중 → 종료
         </p>
         {stateError && <p style={errorTextStyle}>{stateError}</p>}
+
+        {/* 테스트용 투표 초기화 */}
+        <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px dashed #e5e7eb' }}>
+          <button
+            type="button"
+            onClick={handleResetVoting}
+            disabled={resetting}
+            style={dangerButtonStyle}
+          >
+            {resetting ? '초기화 중...' : '🔄 투표 초기화 (테스트용)'}
+          </button>
+          <p style={{ fontSize: '12px', color: '#9ca3af', margin: '8px 0 0 0' }}>
+            모든 투표 기록을 삭제하고 상태를 "미시작"으로 되돌립니다. 제출물은 유지됩니다.
+          </p>
+        </div>
       </section>
 
       {/* Submission form */}

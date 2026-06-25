@@ -200,6 +200,18 @@ export async function advanceState(token: string): Promise<VotingState> {
   return handleResponse<VotingState>(res);
 }
 
+/**
+ * PUT /api/state/reset - reset voting (clear all votes + state back to
+ * 'not_started') for repeated testing (Admin).
+ */
+export async function resetVoting(token: string): Promise<VotingState> {
+  const res = await fetch(`${API_BASE}/state/reset`, {
+    method: 'PUT',
+    headers: adminHeaders(token),
+  });
+  return handleResponse<VotingState>(res);
+}
+
 // ---------------------------------------------------------------------------
 // Results
 // ---------------------------------------------------------------------------
