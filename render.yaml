@@ -1,0 +1,17 @@
+# Render 배포 설정 (Blueprint)
+# Render 대시보드에서 이 저장소를 연결하면 아래 설정대로 자동 배포됩니다.
+services:
+  - type: web
+    name: dx-ai-vibe-coding-contest
+    runtime: node
+    plan: free
+    # 빌드: 의존성 설치(devDependencies 포함) 후 프론트+서버 빌드
+    buildCommand: npm install --include=dev && npm run build
+    # 실행: 컴파일된 Express 서버 시작 (dist-server/server/index.js)
+    startCommand: npm start
+    envVars:
+      # 관리자 비밀번호 - 배포 후 Render 대시보드에서 실제 값으로 변경하세요.
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: NODE_VERSION
+        value: "20"
