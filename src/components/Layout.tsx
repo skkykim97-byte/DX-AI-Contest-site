@@ -17,6 +17,9 @@ function Layout() {
             🏆 DX팀 AI 바이브 코딩 콘테스트
           </NavLink>
           <nav style={navStyle}>
+            <NavLink to="/admin" style={navLinkStyle}>
+              관리자 어드민
+            </NavLink>
             <NavLink to="/" end style={navLinkStyle}>
               아카이빙
             </NavLink>
