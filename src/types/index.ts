@@ -5,6 +5,8 @@ export interface Submission {
   type: 'html' | 'github';
   url: string;
   description: string;
+  /** true면 아카이빙에는 표시되지만 투표 대상에서는 제외됩니다. */
+  excludeFromVoting?: boolean;
   createdAt: string;
   updatedAt: string;
 }

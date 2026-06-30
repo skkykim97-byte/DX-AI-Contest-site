@@ -23,6 +23,7 @@ export class SubmissionService {
     type: 'html' | 'github';
     url: string;
     description: string;
+    excludeFromVoting?: boolean;
   }): Promise<Submission> {
     const validation = validateSubmission(data);
     if (!validation.valid) {
@@ -36,6 +37,7 @@ export class SubmissionService {
       type: data.type,
       url: data.url,
       description: data.description,
+      excludeFromVoting: data.excludeFromVoting ?? false,
       createdAt: now,
       updatedAt: now,
     };
@@ -73,6 +75,7 @@ export class SubmissionService {
       type: 'html' | 'github';
       url: string;
       description: string;
+      excludeFromVoting: boolean;
     }>
   ): Promise<Submission> {
     const all = await this.store.readAll();
@@ -99,6 +102,7 @@ export class SubmissionService {
     const updated: Submission = {
       ...existing,
       ...merged,
+      excludeFromVoting: data.excludeFromVoting ?? existing.excludeFromVoting ?? false,
       updatedAt: new Date().toISOString(),
     };
 

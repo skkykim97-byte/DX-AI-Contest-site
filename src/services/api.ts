@@ -87,6 +87,8 @@ export interface SubmissionInput {
   description: string;
   /** HTML file to upload (only relevant for type === 'html'). */
   file?: File | null;
+  /** true면 아카이빙에는 표시되지만 투표 대상에서 제외됩니다. */
+  excludeFromVoting?: boolean;
 }
 
 /**
@@ -99,6 +101,9 @@ function buildSubmissionFormData(data: Partial<SubmissionInput>): FormData {
   if (data.type !== undefined) form.append('type', data.type);
   if (data.url !== undefined) form.append('url', data.url);
   if (data.description !== undefined) form.append('description', data.description);
+  if (data.excludeFromVoting !== undefined) {
+    form.append('excludeFromVoting', String(data.excludeFromVoting));
+  }
   if (data.file) form.append('file', data.file);
   return form;
 }

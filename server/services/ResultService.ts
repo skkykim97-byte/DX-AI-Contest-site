@@ -26,8 +26,10 @@ export class ResultService {
    * Pure calculation logic - can be used independently for testing.
    */
   calculateResults(votes: Vote[], submissions: Submission[]): VoteResult {
+    // 투표 제외된 제출물은 결과 집계에서도 제외합니다.
+    const votableSubmissions = submissions.filter((s) => !s.excludeFromVoting);
     const submissionMap = new Map<string, Submission>(
-      submissions.map((s) => [s.id, s])
+      votableSubmissions.map((s) => [s.id, s])
     );
 
     // Calculate per-category results
@@ -60,7 +62,7 @@ export class ResultService {
       }
 
       // Also include submissions with 0 votes that are in the system
-      for (const submission of submissions) {
+      for (const submission of votableSubmissions) {
         if (!voteCounts.has(submission.id)) {
           results.push({
             participantName: submission.participantName,

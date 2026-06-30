@@ -49,6 +49,7 @@ function emptyForm(): SubmissionInput {
     url: '',
     description: '',
     file: null,
+    excludeFromVoting: false,
   };
 }
 
@@ -170,6 +171,7 @@ function AdminPage() {
       url: submission.url,
       description: submission.description,
       file: null,
+      excludeFromVoting: submission.excludeFromVoting ?? false,
     });
     setFormError(null);
     setFormSuccess(null);
@@ -223,6 +225,7 @@ function AdminPage() {
       description: form.description.trim(),
       url: form.type === 'github' ? (form.url ?? '').trim() : form.url,
       file: form.type === 'html' ? form.file : null,
+      excludeFromVoting: form.excludeFromVoting,
     };
 
     setSubmitting(true);
@@ -502,6 +505,26 @@ function AdminPage() {
             </span>
           </label>
 
+          <label
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              marginBottom: '16px',
+              fontSize: '14px',
+              color: '#374151',
+              cursor: 'pointer',
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={form.excludeFromVoting ?? false}
+              onChange={(e) => setForm({ ...form, excludeFromVoting: e.target.checked })}
+              style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+            />
+            투표 제외 (아카이빙에는 표시되지만 투표 대상에서 제외)
+          </label>
+
           {formError && <p style={errorTextStyle}>{formError}</p>}
           {formSuccess && <p style={successTextStyle}>{formSuccess}</p>}
 
@@ -543,7 +566,24 @@ function AdminPage() {
             <tbody>
               {submissions.map((s) => (
                 <tr key={s.id}>
-                  <td style={tdStyle}>{s.participantName}</td>
+                  <td style={tdStyle}>
+                    {s.participantName}
+                    {s.excludeFromVoting && (
+                      <span
+                        style={{
+                          marginLeft: '6px',
+                          padding: '1px 6px',
+                          borderRadius: '4px',
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          color: '#b45309',
+                          backgroundColor: '#fef3c7',
+                        }}
+                      >
+                        투표제외
+                      </span>
+                    )}
+                  </td>
                   <td style={tdStyle}>{s.type === 'github' ? '링크' : 'HTML'}</td>
                   <td style={{ ...tdStyle, maxWidth: '360px' }}>{s.description}</td>
                   <td style={tdStyle}>

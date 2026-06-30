@@ -68,7 +68,7 @@ router.get('/', async (_req: Request, res: Response) => {
 router.post('/', adminAuth, async (req: Request, res: Response) => {
   try {
     await runUpload(req, res);
-    const { participantName, type, url, description } = req.body;
+    const { participantName, type, url, description, excludeFromVoting } = req.body;
 
     let submissionUrl = url;
 
@@ -85,6 +85,7 @@ router.post('/', adminAuth, async (req: Request, res: Response) => {
       type,
       url: submissionUrl,
       description,
+      excludeFromVoting: excludeFromVoting === 'true' || excludeFromVoting === true,
     });
 
     res.status(201).json(submission);
@@ -115,12 +116,21 @@ router.put('/:id', adminAuth, async (req: Request, res: Response) => {
   try {
     await runUpload(req, res);
     const { id } = req.params;
-    const { participantName, type, url, description } = req.body;
+    const { participantName, type, url, description, excludeFromVoting } = req.body;
 
-    const updateData: Record<string, string> = {};
+    const updateData: Partial<{
+      participantName: string;
+      type: 'html' | 'github';
+      url: string;
+      description: string;
+      excludeFromVoting: boolean;
+    }> = {};
     if (participantName !== undefined) updateData.participantName = participantName;
     if (type !== undefined) updateData.type = type;
     if (description !== undefined) updateData.description = description;
+    if (excludeFromVoting !== undefined) {
+      updateData.excludeFromVoting = excludeFromVoting === 'true' || excludeFromVoting === true;
+    }
 
     // Handle file upload for HTML type update
     if (req.file) {

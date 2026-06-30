@@ -106,6 +106,8 @@ function VotePage() {
   }
 
   // in_progress: show the voting form.
+  // 투표 제외(excludeFromVoting) 항목은 투표 대상에서 거릅니다.
+  const votableSubmissions = submissions.filter((s) => !s.excludeFromVoting);
   return (
     <div style={containerStyle}>
       <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#111827', marginTop: 0 }}>
@@ -115,7 +117,7 @@ function VotePage() {
         3개 카테고리에서 각각 한 명씩 선택해 투표해 주세요. 동일한 참가자를 여러 카테고리에서 선택할 수 없습니다.
       </p>
       <PrizeBanner />
-      <VotingForm submissions={submissions} onVoted={() => setVoted(true)} />
+      <VotingForm submissions={votableSubmissions} onVoted={() => setVoted(true)} />
     </div>
   );
 }
