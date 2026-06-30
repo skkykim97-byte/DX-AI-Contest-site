@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Submission, VotingState } from '../types';
 import { fetchSubmissions, fetchState } from '../services/api';
 import VotingForm from '../components/VotingForm';
+import { HowVotingWorks, PrizeBanner } from '../components/ContestGuide';
 
 function VotePage() {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
@@ -71,15 +72,18 @@ function VotePage() {
   if (status === 'not_started') {
     return (
       <div style={containerStyle}>
-        <div style={noticeBoxStyle}>
+        <div style={{ ...noticeBoxStyle, padding: '36px 24px', marginBottom: '20px' }}>
           <p style={{ fontSize: '48px', margin: 0 }}>⏳</p>
           <h2 style={{ fontSize: '22px', color: '#111827', margin: '8px 0 4px 0' }}>
-            투표가 아직 시작되지 않았습니다
+            곧 투표가 시작됩니다
           </h2>
           <p style={{ fontSize: '15px', color: '#6b7280', margin: 0 }}>
-            관리자가 투표를 시작하면 이곳에서 투표할 수 있습니다.
+            관리자가 투표를 시작하면 이 화면에서 바로 투표할 수 있어요. 그 전에 진행 방식을 미리 확인해 보세요!
           </p>
         </div>
+
+        <PrizeBanner />
+        <HowVotingWorks />
       </div>
     );
   }
@@ -107,9 +111,10 @@ function VotePage() {
       <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#111827', marginTop: 0 }}>
         🗳️ 투표하기
       </h1>
-      <p style={{ fontSize: '14px', color: '#6b7280', marginTop: '4px', marginBottom: '24px' }}>
+      <p style={{ fontSize: '14px', color: '#6b7280', marginTop: '4px', marginBottom: '20px' }}>
         3개 카테고리에서 각각 한 명씩 선택해 투표해 주세요. 동일한 참가자를 여러 카테고리에서 선택할 수 없습니다.
       </p>
+      <PrizeBanner />
       <VotingForm submissions={submissions} onVoted={() => setVoted(true)} />
     </div>
   );
