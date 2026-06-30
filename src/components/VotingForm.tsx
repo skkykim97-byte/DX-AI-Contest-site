@@ -57,22 +57,6 @@ export default function VotingForm({ submissions, onVoted }: VotingFormProps) {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // Submission ids selected in 2+ categories (duplicate participant conflict).
-  const conflictIds = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const meta of CATEGORIES) {
-      const id = selections[meta.key];
-      if (id) counts.set(id, (counts.get(id) ?? 0) + 1);
-    }
-    const dups = new Set<string>();
-    for (const [id, count] of counts) {
-      if (count >= 2) dups.add(id);
-    }
-    return dups;
-  }, [selections]);
-
-  const hasDuplicate = conflictIds.size > 0;
-
   const missingCategories = useMemo(
     () => CATEGORIES.filter((meta) => !selections[meta.key]),
     [selections]
@@ -98,11 +82,6 @@ export default function VotingForm({ submissions, onVoted }: VotingFormProps) {
     if (missingCategories.length > 0) {
       const names = missingCategories.map((m) => m.title).join(', ');
       setSubmitError(`다음 카테고리에서 선택이 누락되었습니다: ${names}`);
-      return false;
-    }
-
-    if (hasDuplicate) {
-      setSubmitError('동일한 참가자를 여러 카테고리에서 투표할 수 없습니다.');
       return false;
     }
 
@@ -162,7 +141,7 @@ export default function VotingForm({ submissions, onVoted }: VotingFormProps) {
     );
   }
 
-  const canSubmit = !submitting && !hasDuplicate && missingCategories.length === 0;
+  const canSubmit = !submitting && missingCategories.length === 0;
 
   return (
     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
@@ -178,12 +157,6 @@ export default function VotingForm({ submissions, onVoted }: VotingFormProps) {
 
       <hr style={dividerStyle} />
 
-      {hasDuplicate && (
-        <div style={warningStyle} role="alert">
-          ⚠️ 동일한 참가자를 여러 카테고리에서 선택했습니다. 카테고리마다 서로 다른 참가자를 선택해 주세요.
-        </div>
-      )}
-
       {CATEGORIES.map((meta) => (
         <CategorySelector
           key={meta.key}
@@ -194,7 +167,6 @@ export default function VotingForm({ submissions, onVoted }: VotingFormProps) {
           submissions={submissions}
           selectedId={selections[meta.key]}
           onSelect={(id) => handleSelect(meta.key, id)}
-          conflictIds={conflictIds}
         />
       ))}
 
@@ -225,15 +197,6 @@ const dividerStyle: React.CSSProperties = {
   border: 'none',
   borderTop: '1px solid #e5e7eb',
   margin: 0,
-};
-
-const warningStyle: React.CSSProperties = {
-  padding: '12px 16px',
-  borderRadius: '8px',
-  backgroundColor: '#fffbeb',
-  border: '1px solid #fcd34d',
-  color: '#92400e',
-  fontSize: '14px',
 };
 
 const errorStyle: React.CSSProperties = {

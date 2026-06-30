@@ -114,7 +114,7 @@ function VotePage() {
         🗳️ 투표하기
       </h1>
       <p style={{ fontSize: '14px', color: '#6b7280', marginTop: '4px', marginBottom: '20px' }}>
-        3개 카테고리에서 각각 한 명씩 선택해 투표해 주세요. 동일한 참가자를 여러 카테고리에서 선택할 수 없습니다.
+        3개 카테고리에서 각각 한 명씩 선택해 투표해 주세요. 같은 참가자를 여러 카테고리에 중복으로 선택할 수도 있어요.
       </p>
       <PrizeBanner />
       <VotingForm submissions={votableSubmissions} onVoted={() => setVoted(true)} />

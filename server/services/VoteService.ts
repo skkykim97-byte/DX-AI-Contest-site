@@ -81,18 +81,7 @@ export class VoteService {
       }
     }
 
-    // 5. Validate no same participant across categories (Req 3.3)
-    const selectedParticipants = CATEGORY_KEYS.map((key) => {
-      const submission = submissionMap.get(data.selections[key])!;
-      return submission.participantName;
-    });
-
-    const uniqueParticipants = new Set(selectedParticipants);
-    if (uniqueParticipants.size < selectedParticipants.length) {
-      throw new VoteValidationError(
-        '동일한 참가자를 2개 이상의 카테고리에 선택할 수 없습니다.'
-      );
-    }
+    // 5. 동일 참가자를 여러 카테고리에 선택하는 것은 허용됩니다 (중복 투표 가능).
 
     // 6. Save vote
     const vote: Vote = {

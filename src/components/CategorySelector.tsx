@@ -15,11 +15,6 @@ interface CategorySelectorProps {
   selectedId: string;
   /** Called with the submission id when a participant is selected. */
   onSelect: (submissionId: string) => void;
-  /**
-   * Submission ids that are currently selected in more than one category.
-   * Options matching these ids are highlighted as conflicting.
-   */
-  conflictIds: Set<string>;
 }
 
 export default function CategorySelector({
@@ -30,7 +25,6 @@ export default function CategorySelector({
   submissions,
   selectedId,
   onSelect,
-  conflictIds,
 }: CategorySelectorProps) {
   return (
     <fieldset style={fieldsetStyle}>
@@ -46,23 +40,14 @@ export default function CategorySelector({
       <div style={optionListStyle}>
         {submissions.map((submission) => {
           const isSelected = selectedId === submission.id;
-          const isConflict = isSelected && conflictIds.has(submission.id);
 
           return (
             <label
               key={submission.id}
               style={{
                 ...optionStyle,
-                borderColor: isConflict
-                  ? '#dc2626'
-                  : isSelected
-                    ? '#2563eb'
-                    : '#e5e7eb',
-                backgroundColor: isConflict
-                  ? '#fef2f2'
-                  : isSelected
-                    ? '#eff6ff'
-                    : '#ffffff',
+                borderColor: isSelected ? '#2563eb' : '#e5e7eb',
+                backgroundColor: isSelected ? '#eff6ff' : '#ffffff',
               }}
             >
               <input

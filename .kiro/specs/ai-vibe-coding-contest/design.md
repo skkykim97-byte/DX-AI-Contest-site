@@ -375,9 +375,9 @@ function normalizeName(name: string): string {
 
 **Validates: Requirements 3.2, 3.5**
 
-### Property 7: 동일 참가자 다중 카테고리 선택 방지 (No Duplicate Participant Across Categories)
+### Property 7: 동일 참가자 다중 카테고리 선택 허용 (Duplicate Participant Across Categories Allowed)
 
-*For any* 투표 제출 요청에서, 3개 카테고리에 선택된 제출물의 참가자가 모두 서로 달라야 한다. 동일 참가자의 제출물이 2개 이상의 카테고리에서 선택된 경우 투표는 거부되어야 한다.
+*For any* 투표 제출 요청에서, 3개 카테고리 각각에 정확히 1개의 유효한 제출물이 선택되어 있으면, 동일 참가자가 둘 이상의 카테고리에서 선택되었더라도 투표는 정상적으로 접수되어야 한다.
 
 **Validates: Requirements 3.3**
 

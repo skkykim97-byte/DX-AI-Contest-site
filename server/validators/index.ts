@@ -141,12 +141,7 @@ export function validateVote(data: unknown): VoteValidationResult {
     };
   }
 
-  // Req 3.3: 동일 참가자 2개 이상 카테고리 선택 방지
-  const selectedIds = CATEGORY_KEYS.map((key) => selections[key] as string);
-  const uniqueIds = new Set(selectedIds);
-  if (uniqueIds.size < selectedIds.length) {
-    return { valid: false, error: '동일한 참가자를 2개 이상의 카테고리에 선택할 수 없습니다.' };
-  }
+  // 동일 참가자를 여러 카테고리에 선택하는 것은 허용됩니다 (중복 투표 가능).
 
   return { valid: true };
 }
