@@ -43,20 +43,41 @@ export class JsonFileStore<T> {
 
   /**
    * Read all items. Returns an empty array if nothing has been stored yet.
+   * If Redis is configured but fails, logs the error and falls back to the
+   * local file so the app keeps working instead of returning a 500.
    */
   async readAll(): Promise<T[]> {
     if (this.useRedis) {
-      return this.redisReadAll();
+      try {
+        return await this.redisReadAll();
+      } catch (err) {
+        console.error(
+          `[JsonFileStore] Redis read failed for "${this.redisKey}", falling back to file. ` +
+            `Check UPSTASH_REDIS_REST_URL (must start with https://) and UPSTASH_REDIS_REST_TOKEN. Error:`,
+          err instanceof Error ? err.message : err
+        );
+      }
     }
     return this.fileReadAll();
   }
 
   /**
    * Write all items, replacing the existing collection.
+   * If Redis is configured but fails, logs the error and falls back to the
+   * local file so writes don't hard-fail with a 500.
    */
   async writeAll(data: T[]): Promise<void> {
     if (this.useRedis) {
-      return this.redisWriteAll(data);
+      try {
+        await this.redisWriteAll(data);
+        return;
+      } catch (err) {
+        console.error(
+          `[JsonFileStore] Redis write failed for "${this.redisKey}", falling back to file. ` +
+            `Check UPSTASH_REDIS_REST_URL (must start with https://) and UPSTASH_REDIS_REST_TOKEN. Error:`,
+          err instanceof Error ? err.message : err
+        );
+      }
     }
     return this.fileWriteAll(data);
   }
@@ -71,10 +92,17 @@ export class JsonFileStore<T> {
     if (!fetchFn) {
       throw new Error('fetch is not available in this runtime');
     }
-    const res = await fetchFn(this.redisUrl as string, {
+    const url = (this.redisUrl ?? '').trim();
+    const token = (this.redisToken ?? '').trim();
+    if (!/^https:\/\//i.test(url)) {
+      throw new Error(
+        `UPSTASH_REDIS_REST_URL must be the HTTPS REST URL (https://...), got: "${url.slice(0, 12)}..."`
+      );
+    }
+    const res = await fetchFn(url, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${this.redisToken}`,
+        Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(command),
