@@ -13,5 +13,11 @@ services:
       # 관리자 비밀번호 - 배포 후 Render 대시보드에서 실제 값으로 변경하세요.
       - key: ADMIN_PASSWORD
         sync: false
+      # (선택) 데이터 영구 저장용 Upstash Redis. 설정하면 제출물/투표가
+      # 서버 재시작/재배포 후에도 사라지지 않습니다. 미설정 시 파일 저장(임시).
+      - key: UPSTASH_REDIS_REST_URL
+        sync: false
+      - key: UPSTASH_REDIS_REST_TOKEN
+        sync: false
       - key: NODE_VERSION
         value: "20"

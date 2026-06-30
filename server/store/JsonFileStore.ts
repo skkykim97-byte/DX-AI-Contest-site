@@ -1,21 +1,113 @@
 import { readFile, writeFile, rename, mkdir } from 'fs/promises';
-import { dirname, join } from 'path';
+import { dirname, join, basename } from 'path';
 
 /**
- * Generic JSON file-based store with atomic writes and in-memory mutex.
- * Stores an array of items of type T in a JSON file.
+ * Generic durable store for an array of items of type T.
+ *
+ * Two backends are supported, chosen automatically:
+ *
+ *  1. **Upstash Redis (durable)** — used when the environment variables
+ *     `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` are set.
+ *     This keeps data persistent across server restarts / redeploys, which is
+ *     required on ephemeral hosting (e.g. Render free tier) where the local
+ *     filesystem is wiped on restart.
+ *
+ *  2. **Local JSON file (fallback)** — used when no Redis config is present
+ *     (e.g. local development). Writes atomically via a temp file + rename and
+ *     serializes writes with an in-memory mutex.
+ *
+ * The Redis key is derived from the file name (e.g. "submissions.json"), so
+ * each logical collection maps to its own key.
  */
 export class JsonFileStore<T> {
   private filePath: string;
+  private redisKey: string;
   private lockPromise: Promise<void> = Promise.resolve();
 
   constructor(filePath: string) {
     this.filePath = filePath;
+    this.redisKey = basename(filePath); // e.g. "submissions.json"
+  }
+
+  private get redisUrl(): string | undefined {
+    return process.env.UPSTASH_REDIS_REST_URL;
+  }
+
+  private get redisToken(): string | undefined {
+    return process.env.UPSTASH_REDIS_REST_TOKEN;
+  }
+
+  private get useRedis(): boolean {
+    return Boolean(this.redisUrl && this.redisToken);
   }
 
   /**
-   * Acquire the in-memory mutex lock.
-   * Returns a release function to call when done.
+   * Read all items. Returns an empty array if nothing has been stored yet.
+   */
+  async readAll(): Promise<T[]> {
+    if (this.useRedis) {
+      return this.redisReadAll();
+    }
+    return this.fileReadAll();
+  }
+
+  /**
+   * Write all items, replacing the existing collection.
+   */
+  async writeAll(data: T[]): Promise<void> {
+    if (this.useRedis) {
+      return this.redisWriteAll(data);
+    }
+    return this.fileWriteAll(data);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Redis backend (Upstash REST)
+  // ---------------------------------------------------------------------------
+
+  private async redisCommand(command: unknown[]): Promise<{ result: unknown }> {
+    // Use the global fetch available in Node 18+ (Render runs Node 20).
+    const fetchFn = (globalThis as { fetch?: typeof fetch }).fetch;
+    if (!fetchFn) {
+      throw new Error('fetch is not available in this runtime');
+    }
+    const res = await fetchFn(this.redisUrl as string, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.redisToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(command),
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`Upstash Redis error ${res.status}: ${text}`);
+    }
+    return (await res.json()) as { result: unknown };
+  }
+
+  private async redisReadAll(): Promise<T[]> {
+    const { result } = await this.redisCommand(['GET', this.redisKey]);
+    if (result == null) {
+      return [];
+    }
+    try {
+      return JSON.parse(String(result)) as T[];
+    } catch {
+      return [];
+    }
+  }
+
+  private async redisWriteAll(data: T[]): Promise<void> {
+    await this.redisCommand(['SET', this.redisKey, JSON.stringify(data)]);
+  }
+
+  // ---------------------------------------------------------------------------
+  // File backend (local fallback)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Acquire the in-memory mutex lock. Returns a release function.
    */
   private acquireLock(): Promise<() => void> {
     let release: () => void;
@@ -27,28 +119,23 @@ export class JsonFileStore<T> {
     return waitForPrevious.then(() => release!);
   }
 
-  /**
-   * Read all items from the JSON file.
-   * Returns empty array if file does not exist.
-   */
-  async readAll(): Promise<T[]> {
+  private async fileReadAll(): Promise<T[]> {
     try {
       const content = await readFile(this.filePath, 'utf-8');
       return JSON.parse(content) as T[];
     } catch (err: unknown) {
-      if (err instanceof Error && 'code' in err && (err as NodeJS.ErrnoException).code === 'ENOENT') {
+      if (
+        err instanceof Error &&
+        'code' in err &&
+        (err as NodeJS.ErrnoException).code === 'ENOENT'
+      ) {
         return [];
       }
       throw err;
     }
   }
 
-  /**
-   * Write all items to the JSON file atomically.
-   * Writes to a temp file first, then renames to target path.
-   * Uses in-memory mutex to prevent concurrent writes.
-   */
-  async writeAll(data: T[]): Promise<void> {
+  private async fileWriteAll(data: T[]): Promise<void> {
     const release = await this.acquireLock();
     try {
       const dir = dirname(this.filePath);
