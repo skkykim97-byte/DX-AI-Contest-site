@@ -4,23 +4,16 @@ import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { adminAuth } from '../middleware/adminAuth.js';
 import { SubmissionService, ValidationError, NotFoundError } from '../services/SubmissionService.js';
+import { FileStore } from '../store/FileStore.js';
 
 const router = Router();
 const submissionService = new SubmissionService();
+const fileStore = new FileStore();
 
-// Configure multer for HTML file uploads
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    cb(null, path.join(process.cwd(), 'uploads'));
-  },
-  filename: (_req, _file, cb) => {
-    const uuid = uuidv4();
-    cb(null, `${uuid}.html`);
-  },
-});
-
+// Keep the uploaded file in memory so its content can be persisted durably
+// (to Upstash when configured), instead of only the ephemeral local disk.
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB
   },
@@ -72,9 +65,11 @@ router.post('/', adminAuth, async (req: Request, res: Response) => {
 
     let submissionUrl = url;
 
-    // If HTML type with file upload, generate URL from uploaded file
+    // If HTML type with file upload, persist the file content and generate URL
     if (type === 'html' && req.file) {
-      submissionUrl = `/uploads/${req.file.filename}`;
+      const filename = `${uuidv4()}.html`;
+      await fileStore.putFile(filename, req.file.buffer);
+      submissionUrl = `/uploads/${filename}`;
     } else if (type === 'html' && !url && !req.file) {
       res.status(400).json({ error: 'HTML 파일을 업로드하거나 URL을 입력해야 합니다', field: 'url' });
       return;
@@ -134,7 +129,9 @@ router.put('/:id', adminAuth, async (req: Request, res: Response) => {
 
     // Handle file upload for HTML type update
     if (req.file) {
-      updateData.url = `/uploads/${req.file.filename}`;
+      const filename = `${uuidv4()}.html`;
+      await fileStore.putFile(filename, req.file.buffer);
+      updateData.url = `/uploads/${filename}`;
     } else if (url !== undefined) {
       updateData.url = url;
     }
